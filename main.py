@@ -1,10 +1,10 @@
-from flask import Flask
+import flask
 
-app = Flask(__name__)
+app = flask.Flask(__name__)
 
 @app.route('/')
 def index():
-  return Hello!
+    return "Hello World!"
 
 if __name__ == '__main__':
-  app.run(port=5000)
+    app.run()
