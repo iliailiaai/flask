@@ -16,7 +16,7 @@ def multiply():
         return jsonify({'error': 'Invalid input'}), 400
     
     number = data['number']  # Извлекаем переданное число
-    result = number * 100    # Умножаем число на 100
+    result = number * 150    # Умножаем число на 100
     return jsonify({'result': result})  # Возвращаем JSON с результатом
 
 if __name__ == '__main__':
