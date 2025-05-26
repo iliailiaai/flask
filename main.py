@@ -11,6 +11,7 @@ def index():
 # Обработка POST-запроса
 @app.route('/api/multiply', methods=['POST'])
 def multiply():
+    print("Raw request data:", request.data) 
     data = request.get_json()  # Получаем JSON из тела запроса
     if not data or 'number' not in data:
         return jsonify({'error': 'Invalid input'}), 400
