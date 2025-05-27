@@ -19,8 +19,8 @@ class MultiplyRecord(db.Model):
     def to_dict(self):
         return {"id": self.id, "input": self.input, "result": self.result}
 
-@app.before_first_request
-def create_tables():
+# Создаём таблицы сразу при инициализации модуля
+with app.app_context():
     db.create_all()
 
 @app.route('/')
