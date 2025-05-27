@@ -17,7 +17,7 @@ class MultiplyRecord(db.Model):
     input  = db.Column(db.Integer, nullable=False)
     result = db.Column(db.Integer, nullable=False)
     def to_dict(self):
-        return {"id": self.id, "input": self.input, "result": self.result}
+        return {"id": self.id, "input": int(self.input), "result": int(self.result)}
 
 # Создаём таблицы сразу при инициализации модуля
 with app.app_context():
