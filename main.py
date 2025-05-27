@@ -14,8 +14,8 @@ db = SQLAlchemy(app)
 class MultiplyRecord(db.Model):
     __tablename__ = 'multiply_records'
     id     = db.Column(db.Integer, primary_key=True)
-    input  = db.Column(db.Float, nullable=False)
-    result = db.Column(db.Float, nullable=False)
+    input  = db.Column(db.Integer, nullable=False)
+    result = db.Column(db.Integer, nullable=False)
     def to_dict(self):
         return {"id": self.id, "input": self.input, "result": self.result}
 
@@ -29,18 +29,20 @@ def index():
 
 @app.route('/api/multiply', methods=['POST'])
 def multiply():
+    print("Raw request data:", request.data) 
+    
     data = request.get_json()
     if not data or 'number' not in data:
         return jsonify({'error': 'Invalid input'}), 400
 
-    number = float(data['number'])
+    number = data['number']
     result = number * 150
 
     record = MultiplyRecord(input=number, result=result)
     db.session.add(record)
     db.session.commit()
 
-    return jsonify(record.to_dict()), 201
+    return jsonify({'result': result})  # Возвращаем JSON с результатом
 
 @app.route('/api/records', methods=['GET'])
 def get_records():
