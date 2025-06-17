@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from models import db, MultiplyRecord 
 
 app = Flask(__name__)
 CORS(app)
@@ -9,15 +10,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
     "mysql+pymysql://root:cVeNAZGwWHptohkIyPQjyoWZOHKIkXld@mysql.railway.internal:3306/railway"
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
-class MultiplyRecord(db.Model):
-    __tablename__ = 'multiply_records'
-    id     = db.Column(db.Integer, primary_key=True)
-    input  = db.Column(db.Integer, nullable=False)
-    result = db.Column(db.Integer, nullable=False)
-    def to_dict(self):
-        return {"id": self.id, "input": int(self.input), "result": int(self.result)}
+db.init_app(app)
 
 # Создаём таблицы сразу при инициализации модуля
 with app.app_context():
