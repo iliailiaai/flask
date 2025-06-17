@@ -53,29 +53,46 @@ def add_user():
     if not data or 'id_email' not in data:
         return jsonify({'error': 'Missing id_email'}), 400
 
-    user = User(id_email=data['id_email'])
-    user_data = UserData(
-        user_email=data['id_email'],
-        purpose=data['purpose'],
-        gender=data['gender'],
-        level=data['level'],
-        frequency=data['frequency'],
-        trauma=data['trauma'],
-        muscles=data['muscles'],
-        age=data['age']
-    )
+    email = data['id_email']
+    # Попробуем найти существующего пользователя
+    user = User.query.get(email)
+    if not user:
+        # Если нет — создаём
+        user = User(id_email=email)
+        user.user_data = UserData(
+            user_email=email,
+            purpose=data.get('purpose'),
+            gender=data.get('gender'),
+            level=data.get('level'),
+            frequency=data.get('frequency'),
+            trauma=data.get('trauma'),
+            muscles=data.get('muscles'),
+            age=data.get('age')
+        )
+        db.session.add(user)
+        status_code = 201
+    else:
+        # Если есть — обновляем поля
+        ud = user.user_data
+        ud.purpose   = data.get('purpose',   ud.purpose)
+        ud.gender    = data.get('gender',    ud.gender)
+        ud.level     = data.get('level',     ud.level)
+        ud.frequency = data.get('frequency', ud.frequency)
+        ud.trauma    = data.get('trauma',    ud.trauma)
+        ud.muscles   = data.get('muscles',   ud.muscles)
+        ud.age       = data.get('age',       ud.age)
+        status_code = 200  # OK — обновление
 
-    db.session.add(user)
-    db.session.add(user_data)
     db.session.commit()
 
     return jsonify({
         'id_email': user.id_email,
         'user_data': {
-            'purpose': user_data.purpose
+            'purpose': user.user_data.purpose,
+            'gender': user.user_data.gender,
+            # ... при необходимости возвращайте остальные поля
         }
-    }), 201
-
+    }), status_code
 
 
 
