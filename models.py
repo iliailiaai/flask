@@ -14,7 +14,7 @@ class MultiplyRecord(db.Model):
 
 
 
-
+"""
 class User(db.Model):
     __tablename__ = 'users'
     id_email = db.Column(db.String, primary_key=True)
@@ -34,3 +34,4 @@ class UserData(db.Model):
     age = db.Column(db.Integer)
 
     user = db.relationship("User", back_populates="user_data")
+"""
