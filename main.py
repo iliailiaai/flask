@@ -21,17 +21,17 @@ with app.app_context():
 def index():
     return "Hello World!"
 
+
+##############
 @app.route('/api/multiply', methods=['POST'])
 def multiply():
     print("Raw request data:", request.data) 
-    
     data = request.get_json()
     if not data or 'number' not in data:
         return jsonify({'error': 'Invalid input'}), 400
 
     number = data['number']
     result = number * 150
-
     record = MultiplyRecord(input=number, result=result)
     db.session.add(record)
     db.session.commit()
@@ -42,6 +42,21 @@ def multiply():
 def get_records():
     recs = MultiplyRecord.query.order_by(MultiplyRecord.id.desc()).all()
     return jsonify([r.to_dict() for r in recs])
+##############
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
