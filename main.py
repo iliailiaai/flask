@@ -55,7 +55,7 @@ def add_user():
 
     user = User(id_email=data['id_email'])
     user_data = UserData(
-        user_id=data['id_email'],
+        user_email=data['id_email'],
         purpose=data['purpose'],
         gender=data['gender'],
         level=data['level'],
