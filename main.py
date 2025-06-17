@@ -46,7 +46,35 @@ def get_records():
 
 
 
+# Роут сохранения user + userdata
+@app.route('/users', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    if not data or 'id_email' not in data:
+        return jsonify({'error': 'Missing id_email'}), 400
 
+    user = User(id_email=data['id_email'])
+    user_data = UserData(
+        user_id=data['id_email'],
+        purpose=data['purpose'],
+        gender=data['gender'],
+        level=data['level'],
+        frequency=data['frequency'],
+        trauma=data['trauma'],
+        muscles=data['muscles'],
+        age=data['age']
+    )
+
+    db.session.add(user)
+    db.session.add(user_data)
+    db.session.commit()
+
+    return jsonify({
+        'id_email': user.id_email,
+        'user_data': {
+            'purpose': user_data.purpose
+        }
+    }), 201
 
 
 
