@@ -4,3 +4,4 @@ gunicorn
 Flask-SQLAlchemy
 pymysql
 cryptography
+openai
