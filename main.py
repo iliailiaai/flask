@@ -23,6 +23,78 @@ client = OpenAI(
 with app.app_context():
     db.create_all()
 
+
+import re
+from dataclasses import dataclass
+from typing import Union, List
+
+@dataclass
+class Exercise:
+    name: str
+    weight: Union[float, str]  # вес может быть числом или строкой "?"
+    sets: int
+    reps: Union[int, str]  # повторения могут быть числом или текстом (например, "Держаться 30 секунд")
+    rest_min: float
+
+@dataclass
+class Workout:
+    number: int
+    exercises: List[Exercise]
+    rest_days: int
+
+@dataclass
+class Program:
+    workouts: List[Workout]
+
+    def add_workout(self, workout: Workout):
+        self.workouts.append(workout)
+
+    def clear_workouts(self):
+        self.workouts.clear()
+
+# Функция для парсинга
+def parse_program(text: str) -> Program:
+    program_parsed = Program(workouts=[])
+
+    # Разделяем текст на отдельные тренировки
+    workouts_text = text.split("///Тренировка")[1:]  # Пропускаем текст до первой тренировки
+    for workout_text in workouts_text:
+        # Извлекаем номер тренировки
+        workout_number_match = re.search(r"(\d+) день", workout_text)
+        if not workout_number_match:
+            continue
+        workout_number = int(workout_number_match.group(1))
+
+        # Ищем упражнения
+        exercises = []
+        exercise_matches = re.findall(
+            r"\d+\.\s+([^\n]+)\.\n-Вес:\s*([^\n]+)\n-Подходов:\s*(\d+)\n-Повторений:\s*([^\n]+)\n-Отдых между подходами:\s*([\d.]+)",
+            workout_text
+        )
+        for match in exercise_matches:
+            name, weight, sets, reps, rest_min = match
+            weight = float(weight) if weight.replace(".", "", 1).isdigit() else weight
+            sets = int(sets)
+            reps = int(reps) if reps.isdigit() else reps
+            rest_min = float(rest_min)
+            exercises.append(Exercise(name=name, weight=weight, sets=sets, reps=reps, rest_min=rest_min))
+
+        # Ищем количество дней отдыха
+        rest_days_match = re.search(r"\*\*\*Дней для отдыха для следующей тренировки:\s*(\d+)", workout_text)
+        rest_days = int(rest_days_match.group(1)) if rest_days_match else 0
+
+        # Создаем тренировку и добавляем её в программу
+        workout = Workout(number=workout_number, exercises=exercises, rest_days=rest_days)
+        program_parsed.add_workout(workout)
+
+    return program_parsed
+
+
+
+
+
+
+
 @app.route('/')
 def index():
     return "Hello World!"
@@ -180,8 +252,43 @@ def compile_program():
     reply = chat_completion.choices[0].message.content
     print(reply)
     user_messages.append({"role": "assistant", "content": reply})
+
+    program_parsed = parse_program(reply)
+
+        # 1) Создаём запись программы
+    prog = ProgramModel(user_email=email)
+    db.session.add(prog)
+    db.session.flush()  # чтобы получить prog.id до коммита
+    
+    # 2) Для каждой тренировки из dataclass
+    for w in program_parsed.workouts:
+        w_model = WorkoutModel(
+            program_id=prog.id,
+            number=w.number,
+            rest_days=w.rest_days
+        )
+        db.session.add(w_model)
+        db.session.flush()  # чтобы получить w_model.id
+    
+        # 3) Для каждого упражнения в тренировке
+        for ex in w.exercises:
+            ex_model = ExerciseModel(
+                workout_id=w_model.id,
+                name=ex.name,
+                weight=str(ex.weight),
+                sets=ex.sets,
+                reps=str(ex.reps),
+                rest_min=ex.rest_min
+            )
+            db.session.add(ex_model)
+    
+    # 4) Коммитим всё одной транзакцией
+    db.session.commit()
     
     return jsonify({"program": reply})
+
+
+
 
 
 
