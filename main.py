@@ -34,7 +34,7 @@ class Exercise:
     weight: Union[float, str]  # вес может быть числом или строкой "?"
     sets: int
     reps: Union[int, str]  # повторения могут быть числом или текстом (например, "Держаться 30 секунд")
-    rest_min: float
+    rest_min: str
 
 @dataclass
 class Workout:
@@ -76,7 +76,7 @@ def parse_program(text: str) -> Program:
             weight = float(weight) if weight.replace(".", "", 1).isdigit() else weight
             sets = int(sets)
             reps = int(reps) if reps.isdigit() else reps
-            rest_min = float(rest_min)
+            rest_min = str(rest_min)
             exercises.append(Exercise(name=name, weight=weight, sets=sets, reps=reps, rest_min=rest_min))
 
         # Ищем количество дней отдыха
