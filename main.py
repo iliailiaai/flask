@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from models import db, MultiplyRecord, User, UserData
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
@@ -12,6 +13,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+client = OpenAI(
+    api_key="sk-kiTWnBf109fi4oZtecJrFPoCTp2FvJW1",
+    base_url="https://api.proxyapi.ru/openai/v1",
+)
 
 # Создаём таблицы сразу при инициализации модуля
 with app.app_context():
@@ -94,6 +100,88 @@ def add_user():
         }
     }), status_code
 
+
+
+@app.route('/compile_program', methods=['POST'])
+def compile_program():
+    data = request.get_json()
+    email = data.get('id_email')
+    if not email:
+        return jsonify({'error': 'Missing id_email'}), 400
+
+    # Ищем пользователя в базе
+    user = User.query.get(email)
+    if not user or not user.user_data:
+        return jsonify({'error': 'User not found or missing user_data'}), 404
+
+    # Достаём нужные поля из user_data
+    ud = user.user_data
+    purpose   = ud.purpose or "не указано"
+    gender    = ud.gender or "не указано"
+    level     = ud.level or "не указано"
+    frequency = ud.frequency or "не указано"
+    trauma    = ud.trauma or "не указано"
+    muscles   = ud.muscles or "не указано"
+    age       = ud.age or "не указано"
+        
+    first_prompt = f"""Составь программу силовых тренировок для человека с такими показателями:  
+    Цель: { purpose }
+    Пол: { gender }
+    Уровень подготовки: { level }
+    Сколько раз в неделю может заниматься: { frequency }
+    Были ли травмы: { trauma }
+    Группы мышц, на которых сделать фокус: { muscles }
+    Возраст: { age }
+
+    Ничего не пиши перед описанием плана тренировок. Если тебе нужно сообщить что-то дополнительно, пиши это в конце.
+
+    Не используй диапазоны, такие как 8-10, пиши точное число. Если нужно указать дробное значение, используй точки (например, 1.5).
+    
+    Время для отдыха пиши в минутах.
+
+    Если не знаешь, какой вес в упражнении прописать пользователю, пиши: "?".
+    
+    Если упражнение с гантелями, указывай об этом в названии упражнения.
+
+    Ответ выдавай строго в таком виде, но можешь написать доп. информацию после перечисления тренировок (При этом тренировок на неделе и упражнений в тренировке может быть несколько, их число ты должен выбрать сам на основании данных о человеке, для которого составляется тренировка):   
+
+    ///Тренировка 1 день.
+
+    1. Название упражнения.
+    -Вес:
+    -Подходов:
+    -Повторений:
+    -Отдых между подходами:
+
+    ***Дней для отдыха для следующей тренировки:
+
+
+    ///Тренировка 2 день.
+
+    1. Название упражнения.
+    -Вес:
+    -Подходов:
+    -Повторений:
+    -Отдых между подходами:
+
+    ***Дней для отдыха для следующей тренировки:
+
+
+    """
+    
+    # Отправляем в OpenAI
+    user_messages = [{"role": "user", "content": first_prompt}]
+
+    chat_completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=user_messages
+    )
+
+    reply = chat_completion.choices[0].message.content
+    print(reply)
+    user_messages.append({"role": "assistant", "content": reply})
+    
+    return jsonify({"program": reply})
 
 
 
