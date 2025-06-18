@@ -255,34 +255,32 @@ def compile_program():
 
     program_parsed = parse_program(reply)
 
-        # 1) Создаём запись программы
+    # создаём программу
     prog = ProgramModel(user_email=email)
     db.session.add(prog)
-    db.session.flush()  # чтобы получить prog.id до коммита
     
-    # 2) Для каждой тренировки из dataclass
+    # для каждой тренировки из dataclass
     for w in program_parsed.workouts:
         w_model = WorkoutModel(
-            program_id=prog.id,
             number=w.number,
             rest_days=w.rest_days
         )
-        db.session.add(w_model)
-        db.session.flush()  # чтобы получить w_model.id
+        # привязываем через relationship
+        prog.workouts.append(w_model)
     
-        # 3) Для каждого упражнения в тренировке
+        # для каждого упражнения
         for ex in w.exercises:
             ex_model = ExerciseModel(
-                workout_id=w_model.id,
-                name=ex.name,
+                name=str(ex.name),
                 weight=str(ex.weight),
                 sets=ex.sets,
                 reps=str(ex.reps),
                 rest_min=ex.rest_min
             )
-            db.session.add(ex_model)
+            # тоже через relationship
+            w_model.exercises.append(ex_model)
     
-    # 4) Коммитим всё одной транзакцией
+    # единый коммит в конце
     db.session.commit()
     
     return jsonify({"program": reply})
