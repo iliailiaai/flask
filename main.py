@@ -307,7 +307,7 @@ def get_program(email):
                 'weight': ex.weight,
                 'sets': ex.sets,
                 'reps': ex.reps,
-                'rest_min': ex.rest_min,
+                'rest_min': str(ex.rest_min),
             })
         workouts_list.append({
             'number': w.number,
