@@ -286,7 +286,41 @@ def compile_program():
     return jsonify({"program": reply})
 
 
+@app.route('/get_program/<email>', methods=['GET'])
+def get_program(email):
+    # Находим последнюю (или единственную) программу пользователя
+    prog = ProgramModel.query \
+        .filter_by(user_email=email) \
+        .order_by(ProgramModel.created_at.desc()) \
+        .first()
 
+    if not prog:
+        return jsonify({'error': 'Program not found'}), 404
+
+    # Собираем workouts
+    workouts_list = []
+    for w in prog.workouts:
+        exercises_list = []
+        for ex in w.exercises:
+            exercises_list.append({
+                'name': ex.name,
+                'weight': ex.weight,
+                'sets': ex.sets,
+                'reps': ex.reps,
+                'rest_min': ex.rest_min,
+            })
+        workouts_list.append({
+            'number': w.number,
+            'rest_days': w.rest_days,
+            'exercises': exercises_list
+        })
+
+    # Формируем итоговый JSON
+    result = {
+        'id_email': email,
+        'workouts': workouts_list
+    }
+    return jsonify(result), 200
 
 
 
