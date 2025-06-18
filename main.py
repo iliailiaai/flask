@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from models import db, MultiplyRecord, User, UserData
+from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel
 from openai import OpenAI
 
 app = Flask(__name__)
