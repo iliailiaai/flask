@@ -64,7 +64,7 @@ class ExerciseModel(db.Model):
     weight    = db.Column(db.String(20), nullable=False)  # строка, чтобы принять "?" или "12.5"
     sets      = db.Column(db.Integer, nullable=False)
     reps      = db.Column(db.String(40), nullable=False)  # строка, чтобы принять текстовые варианты
-    rest_min  = db.Column(db.Float, nullable=False)
+    rest_min  = db.Column(db.String(20), nullable=False)
 
     workout = db.relationship('WorkoutModel', back_populates='exercises')
 
