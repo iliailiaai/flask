@@ -90,6 +90,36 @@ def parse_program(text: str) -> Program:
     return program_parsed
 
 
+from datetime import date, timedelta
+
+def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[dict]:
+    """
+    Для каждого WorkoutModel в `workouts` считаем фактическую дату:
+      current_date = creation_date для первой тренировки,
+      затем current_date += rest_days + 1
+    И прекращаем, как только current_date >= следующий понедельник.
+    Возвращаем список словарей {'day': int, 'workout_number': int}.
+    """
+    schedule = []
+    # находим дату следующего понедельника
+    # weekday(): Пн=0, Вт=1, ..., Вс=6
+    days_till_mon = (7 - creation_date.weekday()) or 7
+    week_boundary = creation_date + timedelta(days=days_till_mon)
+
+    current = creation_date
+    for w in workouts:
+        if current >= week_boundary:
+            break
+        schedule.append({
+            'day': current.day,
+            'workout_number': w.number
+        })
+        # готовим дату для следующей тренировки
+        current = current + timedelta(days=w.rest_days + 1)
+        
+    print(schedule)
+
+    return schedule
 
 
 
@@ -315,10 +345,15 @@ def get_program(email):
             'exercises': exercises_list
         })
 
+    # Теперь у нас есть объект prog: ProgramModel с полем created_at и списком prog.workouts
+    creation_date = prog.created_at.date()  # datetime -> date
+    schedule = compute_schedule(prog.workouts, creation_date)
+
     # Формируем итоговый JSON
     result = {
         'id_email': email,
-        'workouts': workouts_list
+        'workouts': workouts_list,
+        'schedule': schedule
     }
     return jsonify(result), 200
 
