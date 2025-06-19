@@ -362,6 +362,16 @@ def get_program(email):
     return jsonify(result), 200
 
 
+@app.route('/check_program/<email>', methods=['GET'])
+def check_program(email):
+    # Находим последнюю (или единственную) программу пользователя
+    prog = ProgramModel.query \
+        .filter_by(user_email=email) \
+        .order_by(ProgramModel.created_at.desc()) \
+        .first()
+
+    return jsonify({'has_program': bool(program)})
+
 
 
 
