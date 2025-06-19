@@ -103,7 +103,7 @@ def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[
     schedule = []
     # находим дату следующего понедельника
     # weekday(): Пн=0, Вт=1, ..., Вс=6
-    days_till_mon = (7 - creation_date.weekday()) or 7
+    days_till_mon = ((7 - creation_date.weekday()) % 7 or 7) + 7
     week_boundary = creation_date + timedelta(days=days_till_mon)
 
     current = creation_date
