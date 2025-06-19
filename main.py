@@ -107,15 +107,19 @@ def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[
     week_boundary = creation_date + timedelta(days=days_till_mon)
 
     current = creation_date
-    for w in workouts:
-        if current >= week_boundary:
-            break
+    idx = 0               # индекс в workouts
+    n = len(workouts)
+    
+    # Пока не перешли границу следующего понедельника
+    while current < week_boundary:
+        w = workouts[idx % n]   # берем по кругу
         schedule.append({
             'day': current.day,
             'workout_number': w.number
         })
-        # готовим дату для следующей тренировки
+        # готовим дату следующей тренировки
         current = current + timedelta(days=w.rest_days + 1)
+        idx += 1
         
     print(schedule)
 
