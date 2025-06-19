@@ -112,6 +112,10 @@ def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[
     
     # Пока не перешли границу следующего понедельника
     while current < week_boundary:
+        # если воскресенье — переносим на понедельник
+        if current.weekday() == 6:
+            current = current + timedelta(days=1)
+        
         w = workouts[idx % n]   # берем по кругу
         schedule.append({
             'day': current.day,
