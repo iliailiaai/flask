@@ -370,7 +370,7 @@ def check_program(email):
         .order_by(ProgramModel.created_at.desc()) \
         .first()
 
-    return jsonify({'has_program': bool(program)})
+    return jsonify({'has_program': bool(prog)})
 
 
 
