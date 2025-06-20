@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel
+from sqlalchemy import and_
+from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel, ExerciseHistory, ActualExercise, PerformedExercise
 from openai import OpenAI
 
 app = Flask(__name__)
@@ -344,7 +345,7 @@ def get_program(email):
                 'name': ex.name,
                 'weight': ex.weight,
                 'sets': ex.sets,
-                'reps': ex.reps,
+                'reps': str(ex.reps),
                 'rest_min': str(ex.rest_min),
             })
         workouts_list.append({
@@ -377,6 +378,69 @@ def check_program(email):
     print(f"Есть ли программа у {email} - {bool(prog)}")
 
     return jsonify({'has_program': bool(prog)})
+
+
+def get_or_create_exercise_history(user_email: str, raw_name: str) -> ExerciseHistory:
+    name = raw_name.strip().lower()
+
+    # 1) Сначала ищем точное совпадение
+    existing = ExerciseHistory.query.filter_by(
+        user_email=user_email,
+        name=name
+    ).first()
+    if existing:
+        return existing
+
+    # 2) Простое fuzzy-поисковое совпадение (contains)
+    fuzzy = ExerciseHistory.query.filter(
+        ExerciseHistory.user_email == user_email,
+        ExerciseHistory.name.contains(name)
+    ).first()
+    if fuzzy:
+        return fuzzy
+
+    # 3) Если нет — создаём новую запись
+    new = ExerciseHistory(user_email=user_email, name=name)
+    db.session.add(new)
+    db.session.flush()
+    return new
+
+
+@app.route('/save_exercise/<email>', methods=['POST'])
+def save_exercise(email):
+    """
+    Ожидает JSON:
+    {
+      "email": "user@example.com",
+      "name": "Жим штанги лежа",
+      "weight": 60.0,
+      "sets": 4,
+      "reps": 8
+    }
+    """
+    data = request.get_json()
+    name   = data.get('name')
+    weight = data.get('weight')
+    sets   = data.get('sets')
+    reps   = data.get('reps')
+
+    if not all([email, name, weight, sets, reps]):
+        return jsonify({'error': 'Missing fields'}), 400
+
+    # 1) Находим или создаём ExerciseHistory
+    eh = get_or_create_exercise_history(email, name)
+
+    # 2) Создаём PerformedExercise
+    pe = PerformedExercise(
+        exercise_history_id=eh.id,
+        weight= weight,
+        sets=sets,
+        reps=str(ex.reps)
+    )
+    db.session.add(pe)
+    db.session.commit()
+
+    return jsonify({'status': 'ok', 'performed_id': pe.id}), 201
 
 
 
