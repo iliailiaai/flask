@@ -19,6 +19,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id_email = db.Column(db.String(100), primary_key=True)
     user_data = db.relationship("UserData", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    actual_exercises = db.relationship("ActualExercise", back_populates="user", cascade="all, delete-orphan")
 
 class UserData(db.Model):
     __tablename__ = 'user_data'
@@ -69,52 +70,44 @@ class ExerciseModel(db.Model):
 
     workout = db.relationship('WorkoutModel', back_populates='exercises')
 
+    
+class ActualExercise(db.Model):
+    __tablename__ = 'actual_exercise'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_email = db.Column(db.String(100), db.ForeignKey('users.id_email'), nullable=False)
+    value = db.Column(db.Integer, nullable=False)
+
+    user = db.relationship("User", back_populates="actual_exercises")
+
 
 class ExerciseHistory(db.Model):
-    __tablename__   = 'exercise_history'
-    id              = db.Column(db.Integer, primary_key=True)
-    user_email      = db.Column(db.String(100), db.ForeignKey('users.id_email'), nullable=False)
-    name            = db.Column(db.String(255), unique=True, nullable=False)
-    __table_args__  = (db.UniqueConstraint('user_email', 'name'),)
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    __tablename__ = 'exercise_history'
+    id          = db.Column(db.Integer, primary_key=True)
+    user_email  = db.Column(db.String(100), db.ForeignKey('users.id_email'), nullable=False)
+    name        = db.Column(db.String(255), nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # связи к конкретным выполненным сетам
-    performed_sets = db.relationship(
-        'PerformedSet',
-        back_populates='exercise_hist',
+    # Все выполненные события по этому упражнению
+    performed = db.relationship(
+        'PerformedExercise',
+        back_populates='exercise',
         cascade='all, delete-orphan'
     )
 
-
-class WorkoutHistory(db.Model):
-    __tablename__ = 'workout_history'
-    id            = db.Column(db.Integer, primary_key=True)
-    user_email    = db.Column(db.String(100), db.ForeignKey('users.id_email'), nullable=False)
-    executed_at   = db.Column(db.DateTime, default=datetime.utcnow)
-    status        = db.Column(db.String(20), default='in_progress')  # in_progress | completed
-
-    # связь к выполненным упражнениям в рамках этой тренировки
-    performed_sets = db.relationship(
-        'PerformedSet',
-        back_populates='workout_hist',
-        cascade='all, delete-orphan'
+    __table_args__ = (
+        db.UniqueConstraint('user_email', 'name', name='uq_user_exercise'),
     )
 
 
-class PerformedSet(db.Model):
-    """
-    Связывает историю тренировки и историю упражнения, 
-    а также хранит параметры одного сета.
-    """
-    __tablename__ = 'performed_sets'
-    id               = db.Column(db.Integer, primary_key=True)
-    workout_hist_id  = db.Column(db.Integer, db.ForeignKey('workout_history.id'), nullable=False)
-    exercise_hist_id = db.Column(db.Integer, db.ForeignKey('exercise_history.id'), nullable=False)
+class PerformedExercise(db.Model):
+    __tablename__ = 'performed_exercise'
+    id                  = db.Column(db.Integer, primary_key=True)
+    exercise_history_id = db.Column(db.Integer, db.ForeignKey('exercise_history.id'), nullable=False)
+    performed_at        = db.Column(db.DateTime, default=datetime.utcnow)
+    weight              = db.Column(db.String(20), nullable=True)
+    sets                = db.Column(db.Integer, nullable=False)
+    reps                = db.Column(db.String(40), nullable=False)
 
-    weight           = db.Column(db.String(20), nullable=True)
-    sets             = db.Column(db.Integer, nullable=False)
-    reps             = db.Column(db.String(40), nullable=False)
-
-    workout_hist     = db.relationship('WorkoutHistory', back_populates='performed_sets')
-    exercise_hist    = db.relationship('ExerciseHistory', back_populates='performed_sets')
+    exercise = db.relationship('ExerciseHistory', back_populates='performed')
 
