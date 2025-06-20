@@ -418,11 +418,14 @@ def save_exercise(email):
     }
     """
     data = request.get_json()
-    name   = data.get('name')
-    weight = data.get('weight')
-    sets   = data.get('sets')
-    reps   = data.get('reps')
+    name             = data.get('name')
+    weight           = data.get('weight')
+    sets             = data.get('sets')
+    reps             = data.get('reps')
+    workout_number   = data.get('workout_number')
+    actual_exercise  = data.get('actual_exercise')
 
+    # Проверяем обязательные поля
     if not all([email, name, weight, sets, reps]):
         return jsonify({'error': 'Missing fields'}), 400
 
@@ -437,6 +440,33 @@ def save_exercise(email):
         reps=reps
     )
     db.session.add(pe)
+
+        # 2) Обновляем запись в "программе тренировок"
+    #    а) находим программу пользователя
+    prog = ProgramModel.query \
+        .filter_by(user_email=email) \
+        .order_by(ProgramModel.created_at.desc()) \
+        .first()
+    if prog:
+        # б) находим нужную тренировку по её порядковому номеру
+        workout = next(
+            (w for w in prog.workouts if w.number == workout_number),
+            None
+        )
+        if workout:
+            # в) получаем список упражнений этой тренировки
+            exercises = workout.exercises
+            idx = actual_exercise - 1  # actual_exercise — 1‑based
+            if 0 <= idx < len(exercises):
+                # г) правим вес
+                exercises[idx].weight = str(weight)
+            else:
+                return jsonify({'error': 'actual_exercise out of range'}), 400
+        else:
+            return jsonify({'error': 'Workout not found'}), 404
+    else:
+        return jsonify({'error': 'Program not found'}), 404
+
     db.session.commit()
 
     print(f"Упражнение сохранено, вес {pe.weight}")
