@@ -111,9 +111,9 @@ class PerformedSet(db.Model):
     workout_hist_id  = db.Column(db.Integer, db.ForeignKey('workout_history.id'), nullable=False)
     exercise_hist_id = db.Column(db.Integer, db.ForeignKey('exercise_history.id'), nullable=False)
 
-    weight           = db.Column(db.Float, nullable=True)
+    weight           = db.Column(db.String(20), nullable=True)
     sets             = db.Column(db.Integer, nullable=False)
-    reps             = db.Column(db.Integer, nullable=False)
+    reps             = db.Column(db.String(40), nullable=False)
 
     workout_hist     = db.relationship('WorkoutHistory', back_populates='performed_sets')
     exercise_hist    = db.relationship('ExerciseHistory', back_populates='performed_sets')
