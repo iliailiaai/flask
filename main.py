@@ -439,6 +439,8 @@ def save_exercise(email):
     db.session.add(pe)
     db.session.commit()
 
+    print(f"Упражнение сохранено, вес {pe.weight}")
+
     return jsonify({'weight': pe.weight}), 201
 
 
