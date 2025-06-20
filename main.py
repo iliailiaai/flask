@@ -411,7 +411,6 @@ def save_exercise(email):
     """
     Ожидает JSON:
     {
-      "email": "user@example.com",
       "name": "Жим штанги лежа",
       "weight": 60.0,
       "sets": 4,
@@ -433,14 +432,14 @@ def save_exercise(email):
     # 2) Создаём PerformedExercise
     pe = PerformedExercise(
         exercise_history_id=eh.id,
-        weight= weight,
+        weight=weight,
         sets=sets,
-        reps=str(ex.reps)
+        reps=reps
     )
     db.session.add(pe)
     db.session.commit()
 
-    return jsonify({'status': 'ok', 'performed_id': pe.id}), 201
+    return jsonify({'weight': pe.weight}), 201
 
 
 
