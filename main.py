@@ -374,7 +374,7 @@ def check_program(email):
         .order_by(ProgramModel.created_at.desc()) \
         .first()
 
-    print(f"Есть ли программа - {bool(prog)}"
+    print(f"Есть ли программа у {email} - {bool(prog)}")
 
     return jsonify({'has_program': bool(prog)})
 
