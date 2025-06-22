@@ -29,6 +29,14 @@ with app.app_context():
     db.create_all()
 
 
+
+with app.app_context():
+    # 1) Сносим только таблицу completed_dates
+    CompletedDates.__table__.drop(db.engine)
+    # 2) Создаём её заново согласно модели
+    CompletedDates.__table__.create(db.engine)
+
+
 @dataclass
 class Exercise:
     name: str
