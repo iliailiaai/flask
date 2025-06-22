@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
-from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel, ExerciseHistory, ActualExercise, PerformedExercise
+from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel, ExerciseHistory, ActualExercise, PerformedExercise, CompletedDates
 from openai import OpenAI
 
 app = Flask(__name__)
@@ -473,6 +473,42 @@ def save_exercise(email):
 
     return jsonify({'weight': pe.weight}), 201
 
+
+
+@app.route('/add_date/<email>', methods=['POST'])
+def add_date(email):
+    data = request.get_json()
+    # Проверяем, что в теле есть ключ "date" (строка в формате YYYY-MM-DD)
+    date = data.get('date')
+    if not date:
+        return jsonify({'error': 'Missing field `date`'}), 400
+
+    # 1) Добавляем новую запись (если дублироваться не должно, можно проверять существование)
+    cd = CompletedDates(user_email=email, date=date)
+    db.session.add(cd)
+
+    # 2) Вычисляем начало текущей недели (понедельник)
+    today = datetime.utcnow().date()
+    # .weekday(): Пн=0, Вт=1, … Вс=6
+    monday_this_week = today - timedelta(days=today.weekday())
+
+    # 3) Граница удаления: понедельник две недели назад
+    boundary = monday_this_week - timedelta(weeks=2)
+
+    # 4) Удаляем все записи этого пользователя старше boundary (т.е. дате < boundary)
+    CompletedDates.query \
+        .filter(
+            CompletedDates.user_email == email,
+            CompletedDates.date < boundary
+        ) \
+        .delete(synchronize_session=False)
+
+    # 5) Фиксим всё одной транзакцией
+    db.session.commit()
+
+    return jsonify({
+        'date_added': date
+    }), 201
 
 
 
