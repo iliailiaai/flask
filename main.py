@@ -477,37 +477,33 @@ def save_exercise(email):
 @app.route('/add_date/<email>', methods=['POST'])
 def add_date(email):
     data = request.get_json()
-    # Проверяем, что в теле есть ключ "date" (строка в формате YYYY-MM-DD)
     date_ = data.get('date')
     if not date_:
         return jsonify({'error': 'Missing field `date`'}), 400
 
-    # 1) Добавляем новую запись (если дублироваться не должно, можно проверять существование)
-    cd = CompletedDates(user_email=email, date_=date_)
+    try:
+        new_date = datetime.strptime(date_, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format'}), 400
+
+    # Сохраняем новую дату
+    cd = CompletedDates(user_email=email, date_=new_date)
     db.session.add(cd)
 
-    # 2) Вычисляем начало текущей недели (понедельник)
+    # Находим границу — понедельник две недели назад
     today = datetime.utcnow().date()
-    # .weekday(): Пн=0, Вт=1, … Вс=6
     monday_this_week = today - timedelta(days=today.weekday())
-
-    # 3) Граница удаления: понедельник две недели назад
     boundary = monday_this_week - timedelta(weeks=2)
 
-    # 4) Удаляем все записи этого пользователя старше boundary (т.е. дате < boundary)
-    CompletedDates.query \
-        .filter(
-            CompletedDates.user_email == email,
-            CompletedDates.date_ < boundary
-        ) \
-        .delete(synchronize_session=False)
+    # Удаляем старые записи
+    CompletedDates.query.filter(
+        CompletedDates.user_email == email,
+        CompletedDates.date_ < boundary
+    ).delete(synchronize_session=False)
 
-    # 5) Фиксим всё одной транзакцией
     db.session.commit()
 
-    return jsonify({
-        'date_added': date_
-    }), 201
+    return jsonify({'date': new_date.isoformat()}), 201
 
 
 
