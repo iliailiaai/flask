@@ -478,12 +478,12 @@ def save_exercise(email):
 def add_date(email):
     data = request.get_json()
     # Проверяем, что в теле есть ключ "date" (строка в формате YYYY-MM-DD)
-    date = data.get('date')
-    if not date:
+    date_ = data.get('date')
+    if not date_:
         return jsonify({'error': 'Missing field `date`'}), 400
 
     # 1) Добавляем новую запись (если дублироваться не должно, можно проверять существование)
-    cd = CompletedDates(user_email=email, date=date)
+    cd = CompletedDates(user_email=email, date_=date_)
     db.session.add(cd)
 
     # 2) Вычисляем начало текущей недели (понедельник)
@@ -498,7 +498,7 @@ def add_date(email):
     CompletedDates.query \
         .filter(
             CompletedDates.user_email == email,
-            CompletedDates.date < boundary
+            CompletedDates.date_ < boundary
         ) \
         .delete(synchronize_session=False)
 
@@ -506,7 +506,7 @@ def add_date(email):
     db.session.commit()
 
     return jsonify({
-        'date_added': date
+        'date_added': date_
     }), 201
 
 
