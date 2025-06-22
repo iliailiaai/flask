@@ -4,6 +4,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_
 from models import db, MultiplyRecord, User, UserData, ProgramModel, WorkoutModel, ExerciseModel, ExerciseHistory, ActualExercise, PerformedExercise, CompletedDates
 from openai import OpenAI
+from datetime import datetime, timedelta, date
+import re
+from dataclasses import dataclass
+from typing import Union, List
 
 app = Flask(__name__)
 CORS(app)
@@ -24,10 +28,6 @@ client = OpenAI(
 with app.app_context():
     db.create_all()
 
-
-import re
-from dataclasses import dataclass
-from typing import Union, List
 
 @dataclass
 class Exercise:
@@ -91,7 +91,6 @@ def parse_program(text: str) -> Program:
     return program_parsed
 
 
-from datetime import date, timedelta
 
 def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[dict]:
     """
