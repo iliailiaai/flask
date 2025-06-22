@@ -42,7 +42,7 @@ class CompletedDates(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_email = db.Column(db.String(100), db.ForeignKey('users.id_email'), nullable=False)
 
-    date = db.Column(db.Integer)
+    date_ = db.Column(db.Integer)
 
 
 class ProgramModel(db.Model):
