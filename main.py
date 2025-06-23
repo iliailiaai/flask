@@ -28,11 +28,12 @@ client = OpenAI(
 with app.app_context():
     db.create_all()
 
-# Удаляем все объекты ProgramModel
-ProgramModel.query.delete()
-
-# Сохраняем изменения
-db.session.commit()
+for i in range(1):
+    programs = db.session.query(ProgramModel).all()
+    for program in programs:
+        db.session.delete(program)
+    
+    db.session.commit()
 
 @dataclass
 class Exercise:
