@@ -222,7 +222,7 @@ def add_user():
 
 
 def generate_prompt_by_userdata(purpose, gender, level, frequency, trauma, muscles, age):
-    first_prompt = f"""Составь программу силовых тренировок для человека с такими показателями:  
+    prompt = f"""Составь программу силовых тренировок для человека с такими показателями:  
     Цель: { purpose }
     Пол: { gender }
     Уровень подготовки: { level }
