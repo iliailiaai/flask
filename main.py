@@ -29,14 +29,6 @@ with app.app_context():
     db.create_all()
 
 
-
-with app.app_context():
-    # 1) Сносим только таблицу completed_dates
-    CompletedDates.__table__.drop(db.engine)
-    # 2) Создаём её заново согласно модели
-    CompletedDates.__table__.create(db.engine)
-
-
 @dataclass
 class Exercise:
     name: str
@@ -514,7 +506,17 @@ def add_date(email):
     return jsonify({'date': new_date.isoformat()}), 201
 
 
+@app.route("/get_completed_dates/<email>", methods=["GET"])
+def get_completed_dates(email):
+    # Получаем все даты по email из таблицы CompletedDate
+    completed = CompletedDate.query.filter_by(email=email).all()
 
+    # Преобразуем результат в нужный формат
+    completed_dates = [{"date": c.date.strftime("%Y-%m-%d")} for c in completed]
+
+    print(completed_dates)
+
+    return jsonify({"completed_dates": completed_dates})
 
 
 
