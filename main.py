@@ -221,29 +221,7 @@ def add_user():
     }), status_code
 
 
-
-@app.route('/compile_program', methods=['POST'])
-def compile_program():
-    data = request.get_json()
-    email = data.get('id_email')
-    if not email:
-        return jsonify({'error': 'Missing id_email'}), 400
-
-    # Ищем пользователя в базе
-    user = User.query.get(email)
-    if not user or not user.user_data:
-        return jsonify({'error': 'User not found or missing user_data'}), 404
-
-    # Достаём нужные поля из user_data
-    ud = user.user_data
-    purpose   = ud.purpose or "не указано"
-    gender    = ud.gender or "не указано"
-    level     = ud.level or "не указано"
-    frequency = ud.frequency or "не указано"
-    trauma    = ud.trauma or "не указано"
-    muscles   = ud.muscles or "не указано"
-    age       = ud.age or "не указано"
-        
+def generate_prompt_by_userdata(purpose, gender, level, frequency, trauma, muscles, age):
     first_prompt = f"""Составь программу силовых тренировок для человека с такими показателями:  
     Цель: { purpose }
     Пол: { gender }
@@ -288,14 +266,160 @@ def compile_program():
 
 
     """
+    return prompt
+
+
+def select_gpt(isSubscribed, user_messages):
+    if isSubscribed:
+        chat_completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=user_messages
+        )
+    else:
+        chat_completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=user_messages
+        )        
+    return chat_completion
+
+
+@app.route('/compile_program', methods=['POST'])
+def compile_program():
+    data = request.get_json()
+    email = data.get('id_email')
+    if not email:
+        return jsonify({'error': 'Missing id_email'}), 400
+
+    # Ищем пользователя в базе
+    user = User.query.get(email)
+    if not user or not user.user_data:
+        return jsonify({'error': 'User not found or missing user_data'}), 404
+
+    # Достаём нужные поля из user_data
+    ud = user.user_data
+    purpose   = ud.purpose or "не указано"
+    gender    = ud.gender or "не указано"
+    level     = ud.level or "не указано"
+    frequency = ud.frequency or "не указано"
+    trauma    = ud.trauma or "не указано"
+    muscles   = ud.muscles or "не указано"
+    age       = ud.age or "не указано"
+        
+    first_prompt = generate_prompt_by_userdata(purpose, gender, level, frequency, trauma, muscles, age)
     
     # Отправляем в OpenAI
     user_messages = [{"role": "user", "content": first_prompt}]
 
-    chat_completion = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=user_messages
-    )
+    #Тут потом изменить на реальный isSubcribed
+    chat_completion = select_gpt(isSubscribed = True, user_messages)
+
+    reply = chat_completion.choices[0].message.content
+    print(reply)
+    user_messages.append({"role": "assistant", "content": reply})
+
+    program_parsed = parse_program(reply)
+
+    # создаём программу
+    prog = ProgramModel(user_email=email)
+    db.session.add(prog)
+    
+    # для каждой тренировки из dataclass
+    for w in program_parsed.workouts:
+        w_model = WorkoutModel(
+            number=w.number,
+            rest_days=w.rest_days
+        )
+        # привязываем через relationship
+        prog.workouts.append(w_model)
+    
+        # для каждого упражнения
+        for ex in w.exercises:
+            ex_model = ExerciseModel(
+                name=str(ex.name),
+                weight=str(ex.weight),
+                sets=ex.sets,
+                reps=str(ex.reps),
+                rest_min=ex.rest_min
+            )
+            # тоже через relationship
+            w_model.exercises.append(ex_model)
+    
+    # единый коммит в конце
+    db.session.commit()
+    
+    return jsonify({"program": reply})
+
+
+@app.route('/add_wish_to_program', methods=['POST'])
+def add_wish_to_program():
+    data = request.get_json()
+    email = data.get('id_email')
+    wish = data.get('wish')
+    if not email:
+        return jsonify({'error': 'Missing id_email'}), 400
+
+    # Ищем пользователя в базе
+    user = User.query.get(email)
+    if not user or not user.user_data:
+        return jsonify({'error': 'User not found or missing user_data'}), 404
+
+    # Достаём нужные поля из user_data
+    ud = user.user_data
+    purpose   = ud.purpose or "не указано"
+    gender    = ud.gender or "не указано"
+    level     = ud.level or "не указано"
+    frequency = ud.frequency or "не указано"
+    trauma    = ud.trauma or "не указано"
+    muscles   = ud.muscles or "не указано"
+    age       = ud.age or "не указано"
+
+    # Находим последнюю (или единственную) программу пользователя
+    prog = ProgramModel.query \
+        .filter_by(user_email=email) \
+        .order_by(ProgramModel.created_at.desc()) \
+        .first()
+
+    if not prog:
+        return jsonify({'error': 'Program not found'}), 404
+
+    # Собираем workouts
+    workouts_list = []
+    for w in prog.workouts:
+        exercises_list = []
+        for ex in w.exercises:
+            exercises_list.append({
+                'name': ex.name,
+                'weight': ex.weight,
+                'sets': ex.sets,
+                'reps': str(ex.reps),
+                'rest_min': str(ex.rest_min),
+            })
+        workouts_list.append({
+            'number': w.number,
+            'rest_days': w.rest_days,
+            'exercises': exercises_list
+        })
+
+    wish_msg = f"""
+    Измени программу тренировок на основе пожелания пользователя: {wish}.
+
+    """
+
+    current_program_msg = f"Программа тренировок, которую надо изменить (в сыром api виде, но ты должен прислать сообщение по инструкции, указанной после api вида программы тренировок): {workouts_list} "
+
+    extra_advice = "Сделать все нужно по следующей инструкции: "
+        
+    first_prompt = generate_prompt_by_userdata(purpose, gender, level, frequency, trauma, muscles, age)
+
+    final_msg = wish_msg + current_program_msg + extra_advice + first_prompt
+
+    print(final_msg)
+    
+    # Отправляем в OpenAI
+    user_messages = [{"role": "user", "content": final_msg}]
+
+    #Тут потом изменить на реальный isSubcribed
+    chat_completion = select_gpt(isSubscribed = True, user_messages)
 
     reply = chat_completion.choices[0].message.content
     print(reply)
