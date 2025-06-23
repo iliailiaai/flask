@@ -512,7 +512,7 @@ def get_completed_dates(email):
     completed = CompletedDates.query.filter_by(user_email=email).all()
 
     # Преобразуем результат в нужный формат
-    completed_dates = [{"date_": c.date.strftime("%Y-%m-%d")} for c in completed]
+    completed_dates = [{"date": c.date_.strftime("%Y-%m-%d")} for c in completed]
 
     print(completed_dates)
 
