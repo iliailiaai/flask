@@ -92,7 +92,7 @@ def parse_program(text: str) -> Program:
 
 
 
-def compute_schedule(workouts: List[WorkoutModel], creation_date: date, diff_weeks: Int) -> List[dict]:
+def compute_schedule(workouts: List[WorkoutModel], creation_date: date, diff_weeks: int) -> List[dict]:
     """
     Для каждого WorkoutModel в `workouts` считаем фактическую дату:
       current_date = creation_date для первой тренировки,
