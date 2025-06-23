@@ -419,7 +419,7 @@ def add_wish_to_program():
     user_messages = [{"role": "user", "content": final_msg}]
 
     #Тут потом изменить на реальный isSubcribed
-    chat_completion = select_gpt(isSubscribed = True, user_messages)
+    chat_completion = select_gpt(isSubscribed = True, user_messages = user_messages)
 
     reply = chat_completion.choices[0].message.content
     print(reply)
