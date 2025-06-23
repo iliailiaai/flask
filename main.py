@@ -509,7 +509,7 @@ def add_date(email):
 @app.route("/get_completed_dates/<email>", methods=["GET"])
 def get_completed_dates(email):
     # Получаем все даты по email из таблицы CompletedDate
-    completed = CompletedDates.query.filter_by(email=email).all()
+    completed = CompletedDates.query.filter_by(user_email=email).all()
 
     # Преобразуем результат в нужный формат
     completed_dates = [{"date": c.date.strftime("%Y-%m-%d")} for c in completed]
