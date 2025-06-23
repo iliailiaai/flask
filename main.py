@@ -28,11 +28,6 @@ client = OpenAI(
 with app.app_context():
     db.create_all()
 
-with app.app_context():
-    programs = db.session.query(ProgramModel).all()
-    for program in programs:
-        db.session.delete(program)
-    db.session.commit()
 
 @dataclass
 class Exercise:
