@@ -92,7 +92,7 @@ def parse_program(text: str) -> Program:
 
 
 
-def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[dict]:
+def compute_schedule(workouts: List[WorkoutModel], creation_date: date, diff_weeks: Int) -> List[dict]:
     """
     Для каждого WorkoutModel в `workouts` считаем фактическую дату:
       current_date = creation_date для первой тренировки,
@@ -103,7 +103,7 @@ def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[
     schedule = []
     # находим дату следующего понедельника
     # weekday(): Пн=0, Вт=1, ..., Вс=6
-    days_till_mon = ((7 - creation_date.weekday()) % 7 or 7) + 7
+    days_till_mon = ((7 - creation_date.weekday()) % 7 or 7) + 7 + (7 * diff_weeks)
     week_boundary = creation_date + timedelta(days=days_till_mon)
 
     current = creation_date
@@ -129,8 +129,18 @@ def compute_schedule(workouts: List[WorkoutModel], creation_date: date) -> List[
 
     return schedule
 
+def get_week_difference(start_date: date, end_date: date) -> int:
+    """
+    Точная разница в ISO-неделях между двумя датами.
+    """
+    start_iso = start_date.isocalendar()
+    end_iso = end_date.isocalendar()
 
+    # считаем количество недель от начала ISO-эпохи (год * 53 + номер недели)
+    total_start_weeks = start_iso[0] * 53 + start_iso[1]
+    total_end_weeks = end_iso[0] * 53 + end_iso[1]
 
+    return total_end_weeks - total_start_weeks
 
 
 @app.route('/')
@@ -355,7 +365,12 @@ def get_program(email):
 
     # Теперь у нас есть объект prog: ProgramModel с полем created_at и списком prog.workouts
     creation_date = prog.created_at.date()  # datetime -> date
-    schedule = compute_schedule(prog.workouts, creation_date)
+    current_date = date.today()
+
+    diff_weeks = get_week_difference(creation_date, current_date)
+    print(diff_weeks)
+    
+    schedule = compute_schedule(prog.workouts, creation_date, diff_weeks)
 
     # Формируем итоговый JSON
     result = {
