@@ -269,6 +269,29 @@ def generate_prompt_by_userdata(purpose, gender, level, frequency, trauma, muscl
     return prompt
 
 
+def reload_compiling(email, user_messages, retries=1):
+    if retries > 3:
+        raise RuntimeError("Превышено количество попыток генерации программы")
+
+    print(f"[RELOAD] Попытка #{retries} с теми же сообщениями")
+
+    user_messages = user_messages[:-2]
+
+    # Повторный запрос к GPT
+    chat_completion = select_gpt(isSubscribed=True, user_messages=user_messages)
+    reply = chat_completion.choices[0].message.content
+    print(f"[RELOAD REPLY]: {reply}")
+    
+    user_messages.append({"role": "assistant", "content": reply})
+    program_parsed = parse_program(reply)
+
+    # Если снова нет упражнений — рекурсивный вызов
+    if all(not workout.exercises for workout in program_parsed.workouts):
+        return reload_compiling(email, user_messages, retries + 1)
+    
+    return program_parsed, reply
+
+
 def select_gpt(isSubscribed, user_messages):
     if isSubscribed:
         chat_completion = client.chat.completions.create(
@@ -323,6 +346,10 @@ def compile_program():
         db.session.delete(prog)
 
     program_parsed = parse_program(reply)
+
+    # Если нужно — пробуем снова
+    if all(not workout.exercises for workout in program_parsed.workouts):
+        program_parsed, reply = reload_compiling(email, user_messages)
 
     # создаём программу
     prog = ProgramModel(user_email=email)
@@ -436,6 +463,10 @@ def add_wish_to_program():
         db.session.delete(prog)
 
     program_parsed = parse_program(reply)
+
+    # Если нужно — пробуем снова
+    if all(not workout.exercises for workout in program_parsed.workouts):
+        program_parsed, reply = reload_compiling(email, user_messages)
 
     # создаём программу
     prog = ProgramModel(user_email=email)
