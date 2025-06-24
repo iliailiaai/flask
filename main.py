@@ -317,8 +317,10 @@ def compile_program():
     print(reply)
     user_messages.append({"role": "assistant", "content": reply})
 
-    # Удаляем старые программы (и всё, что с ними связано) одним запросом
-    ProgramModel.query.filter_by(user_email=email).delete(synchronize_session=False)
+    # удаляем старые программы через ORM
+    old_programs = ProgramModel.query.filter_by(user_email=email).all()
+    for prog in old_programs:
+        db.session.delete(prog)
 
     program_parsed = parse_program(reply)
 
@@ -428,8 +430,10 @@ def add_wish_to_program():
     print(reply)
     user_messages.append({"role": "assistant", "content": reply})
 
-    # Удаляем старые программы (и всё, что с ними связано) одним запросом
-    ProgramModel.query.filter_by(user_email=email).delete(synchronize_session=False)
+    # удаляем старые программы через ORM
+    old_programs = ProgramModel.query.filter_by(user_email=email).all()
+    for prog in old_programs:
+        db.session.delete(prog)
 
     program_parsed = parse_program(reply)
 
