@@ -345,6 +345,16 @@ def compile_program():
     for prog in old_programs:
         db.session.delete(prog)
 
+    # Удаление completed_dates позже текущей даты
+    today = date.today()
+    dates_to_del = CompletedDates.query.filter(
+        CompletedDates.user_email == email,
+        CompletedDates.date_ > today
+    ).all()
+    
+    for date_obj in dates_to_del:
+        db.session.delete(date_obj)
+
     program_parsed = parse_program(reply)
 
     # Если нужно — пробуем снова
@@ -461,6 +471,16 @@ def add_wish_to_program():
     old_programs = ProgramModel.query.filter_by(user_email=email).all()
     for prog in old_programs:
         db.session.delete(prog)
+
+    # Удаление completed_dates позже текущей даты
+    today = date.today()
+    dates_to_del = CompletedDates.query.filter(
+        CompletedDates.user_email == email,
+        CompletedDates.date_ > today
+    ).all()
+    
+    for date_obj in dates_to_del:
+        db.session.delete(date_obj)
 
     program_parsed = parse_program(reply)
 
