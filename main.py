@@ -317,6 +317,9 @@ def compile_program():
     print(reply)
     user_messages.append({"role": "assistant", "content": reply})
 
+    # Удаляем старые программы (и всё, что с ними связано) одним запросом
+    ProgramModel.query.filter_by(user_email=email).delete(synchronize_session=False)
+
     program_parsed = parse_program(reply)
 
     # создаём программу
@@ -424,6 +427,9 @@ def add_wish_to_program():
     reply = chat_completion.choices[0].message.content
     print(reply)
     user_messages.append({"role": "assistant", "content": reply})
+
+    # Удаляем старые программы (и всё, что с ними связано) одним запросом
+    ProgramModel.query.filter_by(user_email=email).delete(synchronize_session=False)
 
     program_parsed = parse_program(reply)
 
