@@ -275,7 +275,7 @@ def reload_compiling(email, user_messages, retries=1):
 
     print(f"[RELOAD] Попытка #{retries} с теми же сообщениями")
 
-    user_messages = user_messages[:-2]
+    user_messages = user_messages[:-1]
 
     # Повторный запрос к GPT
     chat_completion = select_gpt(isSubscribed=True, user_messages=user_messages)
